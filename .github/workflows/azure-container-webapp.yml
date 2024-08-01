@@ -1,35 +1,63 @@
-name: Node.js CI/CD
+name: Build and deploy Node.js app to Azure Web App - cron-jobs-new
 
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '20.x'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
 
-    - name: Install dependencies
-      run: npm install
+      - name: Log in to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_LOGIN_SERVER }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
-    - name: Run tests
-      run: npm test
+      - name: Build and push Docker image
+        run: |
+          docker build -t ${{ secrets.ACR_LOGIN_SERVER }}/cron-jobs-new:${{ github.sha }} .
+          docker push ${{ secrets.ACR_LOGIN_SERVER }}/cron-jobs-new:${{ github.sha }}
 
-    - name: Build project
-      run: npm run build
+      - name: Set environment variables
+        run: |
+          echo "PORT=${{ secrets.PORT }}" >> $GITHUB_ENV
+          echo "MONGO_DB_URI=${{ secrets.MONGO_DB_URI }}" >> $GITHUB_ENV
+          echo "MONGO_DATABASE=${{ secrets.MONGO_DATABASE }}" >> $GITHUB_ENV
+          echo "HH_CLIENT_ID=${{ secrets.HH_CLIENT_ID }}" >> $GITHUB_ENV
+          echo "HH_CLIENT_SECRET=${{ secrets.HH_CLIENT_SECRET }}" >> $GITHUB_ENV
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
 
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: 'cron-jobs-new'
-        slot-name: 'production'
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Web App for Containers
+        run: |
+          az webapp config container set --resource-group cron_job_new --name cron-jobs-new --docker-custom-image-name ${{ secrets.ACR_LOGIN_SERVER }}/cron-jobs-new:${{ github.sha }} --docker-registry-server-url https://${{ secrets.ACR_LOGIN_SERVER }} --docker-registry-server-user ${{ secrets.ACR_USERNAME }} --docker-registry-server-password ${{ secrets.ACR_PASSWORD }}
+
+      - name: Configure App Settings on Azure Web App
+        run: |
+          az webapp config appsettings set --resource-group cron_job_new --name cron-jobs-new --settings WEBSITES_PORT=${{ secrets.PORT }}
+          az webapp config appsettings set --resource-group cron_job_new --name cron-jobs-new --settings MONGO_DB_URI=${{ secrets.MONGO_DB_URI }}
+          az webapp config appsettings set --resource-group cron_job_new --name cron-jobs-new --settings MONGO_DATABASE=${{ secrets.MONGO_DATABASE }}
+          az webapp config appsettings set --resource-group cron_job_new --name cron-jobs-new --settings HH_CLIENT_ID=${{ secrets.HH_CLIENT_ID }}
+          az webapp config appsettings set --resource-group cron_job_new --name cron-jobs-new --settings HH_CLIENT_SECRET=${{ secrets.HH_CLIENT_SECRET }}
+          az webapp config appsettings set --resource-group cron_job_new --name cron-jobs-new --settings OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+
+      - name: Restart Azure Web App
+        run: az webapp restart --resource-group cron_job_new --name cron-jobs-new
