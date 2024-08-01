@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "main": "./src/server.js",
   "scripts": {
-    "start": "node ./dist/server.js",
+    "start": "node ./dist/cron_job.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "job": "npx ts-node ./cron_job.ts",
+    "job": "npx ts-node src/cron_job.ts",
     "build": "tsc"
   },
   "keywords": [],
