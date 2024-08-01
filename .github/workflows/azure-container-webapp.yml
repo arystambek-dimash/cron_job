@@ -48,7 +48,7 @@ jobs:
 
       - name: Deploy to Azure Web App for Containers
         run: |
-          az webapp config container set --resource-group cron_job_new --name cron-jobs-new --docker-custom-image-name ${{ secrets.ACR_LOGIN_SERVER }}/cron-jobs-new:${{ github.sha }} --docker-registry-server-url https://${{ secrets.ACR_LOGIN_SERVER }} --docker-registry-server-user ${{ secrets.ACR_USERNAME }} --docker-registry-server-password ${{ secrets.ACR_PASSWORD }}
+          az webapp config container set --resource-group cron_job_new --name cron-jobs-new --container-image-name ${{ secrets.ACR_LOGIN_SERVER }}/cron-jobs-new:${{ github.sha }} --container-registry-url https://${{ secrets.ACR_LOGIN_SERVER }} --container-registry-user ${{ secrets.ACR_USERNAME }} --container-registry-password ${{ secrets.ACR_PASSWORD }}
 
       - name: Configure App Settings on Azure Web App
         run: |
