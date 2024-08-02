@@ -8,18 +8,6 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const connectDB = async () => {
-    try {
-        await mongoose.connect(process.env.MONGO_DB_URI || 'http://localhost:8080', {dbName: process.env.MONGO_DATABASE});
-        console.log('MongoDB connected successfully');
-    } catch (error) {
-        console.error('MongoDB connection error:', error);
-        process.exit(1);
-    }
-};
-
-connectDB()
-
 export const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY as string
 })
@@ -561,19 +549,13 @@ const autoApply = async () => {
     }
 };
 
-const job1 = new CronJob('0 10 * * *', autoApply, null, true, 'Asia/Qyzylorda');
+export const job1 = new CronJob('0 10 * * *', autoApply, null, true, 'Asia/Qyzylorda');
 
 // Schedule the job to run at 3:00 PM
-const job2 = new CronJob('0 15 * * *', autoApply, null, true, 'Asia/Qyzylorda');
+export const job2 = new CronJob('0 15 * * *', autoApply, null, true, 'Asia/Qyzylorda');
 
 // Schedule the job to run at 6:00 PM
-const job3 = new CronJob('0 18 * * *', autoApply, null, true, 'Asia/Qyzylorda');
+export const job3 = new CronJob('0 18 * * *', autoApply, null, true, 'Asia/Qyzylorda');
 
 // Schedule the job to run at 11:59 PM
-const job4 = new CronJob('59 23 * * *', autoApply, null, true, 'Asia/Qyzylorda');
-
-console.log("Cron job started")
-job1.start();
-job2.start();
-job3.start();
-job4.start();
+export const job4 = new CronJob('59 23 * * *', autoApply, null, true, 'Asia/Qyzylorda');
