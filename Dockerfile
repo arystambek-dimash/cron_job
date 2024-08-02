@@ -17,4 +17,4 @@ COPY . .
 RUN npm run build
 
 # Define the command to run the app
-CMD ["node", "dist/cron_job.js"]
+CMD ["node", "dist/server.js"]
