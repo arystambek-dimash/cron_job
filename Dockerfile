@@ -16,5 +16,7 @@ COPY . .
 # Build the TypeScript code
 RUN npm run build
 
+EXPOSE 8000
+
 # Define the command to run the app
 CMD ["node", "dist/server.js"]

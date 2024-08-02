@@ -1,7 +1,7 @@
 import express from "express";
-import {job1, job2, job3, job4} from "../../../cron_job/src/cron_job";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
+import {job1, job2, job3, job4} from "./cron_job";
 
 const app = express();
 const port = 8000;
