@@ -5,6 +5,7 @@ import axios from "axios";
 import mongoose, {Schema, Document, Model} from 'mongoose';
 import OpenAI from "openai";
 import dotenv from "dotenv";
+import qs from 'qs';
 
 dotenv.config();
 
@@ -316,6 +317,29 @@ class HHService {
 
     }
 
+    refreshAccessToken = async (user: IUser) => {
+        const URL = `https://hh.ru/token`;
+        try {
+            const data = qs.stringify({
+                refresh_token: user.hhRefreshToken,
+                grant_type: "refresh_token"
+            });
+
+            const response = await axios.post(URL, data, {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'HH-User-Agent': 'Recruiter AI/1.0 (arystambekdimash005@gmail.com)'
+                }
+            });
+
+            user.hhAccessToken = response.data.access_token;
+            user.hhRefreshToken = response.data.refresh_token;
+            await user.save();
+        } catch (err) {
+            console.error('Error message:', err);
+        }
+    }
+
     extractTokens(response: any): TokenResponse {
         return {
             access_token: response.data.access_token,
@@ -439,18 +463,18 @@ const processVacancies = async (user: any, position: { position: string; status:
         try {
             const completion = await openai.chat.completions.create({
                 messages: [{role: 'user', content: PROMPT}],
-                model: 'gpt-3.5-turbo',
+                model: 'gpt-4o-mini',
                 temperature: 0.3
             });
             const responseText: any = completion.choices[0].message.content;
             const responseJson = JSON.parse(responseText);
             const extractPosition = responseJson.position;
+            console.log(extractPosition)
             const vacanciesPage = await hhService.getVacancy(extractPosition, {
                 page,
                 text: extractPosition,
                 only_with_salary: user.only_with_salary,
             });
-            console.log(JSON.stringify(vacanciesPage, null, 2))
             if (vacanciesPage.items.length === 0) {
                 continue;
             }
@@ -458,11 +482,11 @@ const processVacancies = async (user: any, position: { position: string; status:
                 if (processedVacancies >= applicationsPerPosition) {
                     return;
                 }
-                const alreadyInVacancyDocs = vacancyDocs.some((doc: any) => doc.vacancy_id === vacancy.id || (doc.job_name === vacancy.name && doc.employer_name === vacancy.employer.name));
+                const alreadyInVacancyDocs = vacancyDocs.some((doc: any) => doc.vacancy_id === vacancy.id || (doc.job_name === vacancy.name && doc.employer_name === vacancy.employer.name) || (doc.job_name === vacancy.name));
                 if (alreadyInVacancyDocs) {
                     return;
                 }
-                const alreadyExistingVacancy = await VacanciesModel.findOne({job_name: vacancy.name});
+                const alreadyExistingVacancy = await VacanciesModel.findOne({user: user.id, job_name: vacancy.name});
                 if (alreadyExistingVacancy) {
                     return;
                 }
@@ -524,6 +548,7 @@ const processVacancies = async (user: any, position: { position: string; status:
 
 const processUsers = async (users: any[]) => {
     const q = queue(async (user: any, callback) => {
+        await hhService.refreshAccessToken(user)
         const positionPromises = user.positions.map(async (position: any) => {
             if (position.position && position.status === 'Active') {
                 await processVacancies(user, position);
@@ -549,13 +574,16 @@ const autoApply = async () => {
     }
 };
 
-export const job1 = new CronJob('0 10 * * *', autoApply, null, true, 'Asia/Qyzylorda');
+export const job1 = new CronJob('0 */2 * * *', autoApply, null, true, 'Asia/Qyzylorda');
 
 // Schedule the job to run at 3:00 PM
-export const job2 = new CronJob('0 15 * * *', autoApply, null, true, 'Asia/Qyzylorda');
+// export const job2 = new CronJob('0 15 * * *', autoApply, null, true, 'Asia/Qyzylorda');
+//
+// // Schedule the job to run at 6:00 PM
+// export const job3 = new CronJob('0 18 * * *', autoApply, null, true, 'Asia/Qyzylorda');
+//
+// // Schedule the job to run at 11:59 PM
+// export const job4 = new CronJob('59 23 * * *', autoApply, null, true, 'Asia/Qyzylorda');
 
-// Schedule the job to run at 6:00 PM
-export const job3 = new CronJob('0 18 * * *', autoApply, null, true, 'Asia/Qyzylorda');
+// export const test = new CronJob('*/5 * * * *', autoApply, null, true, 'Asia/Qyzylorda');
 
-// Schedule the job to run at 11:59 PM
-export const job4 = new CronJob('59 23 * * *', autoApply, null, true, 'Asia/Qyzylorda');

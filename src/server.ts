@@ -1,7 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import {job1, job2, job3, job4} from "./cron_job";
+import {job1} from "./cron_job";
 
 const app = express();
 const port = 8000;
@@ -13,12 +13,12 @@ app.get("/", (req, res) => {
 console.log("Cron job started")
 console.log("Cron job 1 started")
 job1.start();
-console.log("Cron job 2 started")
-job2.start();
-console.log("Cron job 3 started")
-job3.start();
-console.log("Cron job 4 started")
-job4.start();
+// console.log("Cron job 2 started")
+// job2.start();
+// console.log("Cron job 3 started")
+// job3.start();
+// console.log("Cron job 4 started")
+// job4.start();
 
 dotenv.config();
 
