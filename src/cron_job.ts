@@ -318,9 +318,9 @@ class HHService {
     }
 
     refreshAccessToken = async (user: IUser) => {
-        const URL = `https://hh.ru/token`;
+        const URL = `https://api.hh.ru/token`;
         try {
-            const data = qs.stringify({
+            const data = new URLSearchParams({
                 refresh_token: user.hhRefreshToken,
                 grant_type: "refresh_token"
             });
@@ -334,9 +334,13 @@ class HHService {
 
             user.hhAccessToken = response.data.access_token;
             user.hhRefreshToken = response.data.refresh_token;
+
             await user.save();
+
+            console.log('Токены успешно обновлены');
         } catch (err) {
-            console.error('Error message:', err);
+            console.error('Ошибка при обновлении токенов:', err);
+            throw err;
         }
     }
 
