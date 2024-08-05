@@ -320,24 +320,28 @@ class HHService {
     refreshAccessToken = async (user: IUser) => {
         const URL = `https://api.hh.ru/token`;
         try {
-            const data = new URLSearchParams({
-                refresh_token: user.hhRefreshToken,
-                grant_type: "refresh_token"
-            });
+            if (user.hasHHAccount) {
+                const data = new URLSearchParams({
+                    refresh_token: user?.hhRefreshToken as string || 'none',
+                    grant_type: "refresh_token"
+                });
 
-            const response = await axios.post(URL, data, {
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'HH-User-Agent': 'Recruiter AI/1.0 (arystambekdimash005@gmail.com)'
-                }
-            });
+                const response = await axios.post(URL, data, {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'HH-User-Agent': 'Recruiter AI/1.0 (arystambekdimash005@gmail.com)'
+                    }
+                });
 
-            user.hhAccessToken = response.data.access_token;
-            user.hhRefreshToken = response.data.refresh_token;
+                user.hhAccessToken = response.data.access_token;
+                user.hhRefreshToken = response.data.refresh_token;
 
-            await user.save();
+                await user.save();
 
-            console.log('Токены успешно обновлены');
+                console.log('Токены успешно обновлены');
+            } else {
+                console.log('Not hh account')
+            }
         } catch (err) {
             console.error('Ошибка при обновлении токенов:', err);
             throw err;
